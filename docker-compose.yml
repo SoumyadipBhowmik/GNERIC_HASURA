@@ -1,0 +1,58 @@
+version: '3'
+
+services:
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.4
+    volumes:
+      - meilidata:/data.ms
+    environment:
+      - MEILI_MASTER_KEY=testlocalkey
+      - MEILI_NO_ANALYTICS=true
+    ports:
+      - "7700:7700"
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: test
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  graphql-engine:
+    image: hasura/graphql-engine:v1.3.3
+    restart: always
+    environment:
+      HASURA_GRAPHQL_DATABASE_URL: postgres://admin:password@postgres:5432/test
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+      HASURA_GRAPHQL_DEV_MODE: "true"
+      HASURA_GRAPHQL_ADMIN_SECRET: myadminsecretkey
+    ports:
+      - "8094:8080"
+    depends_on:
+      - "postgres"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  meilidata:
+  redis-data:
+    driver: local
+  postgres_data:
